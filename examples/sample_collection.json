@@ -1,9 +1,9 @@
 {
-  "name": "Authorization Regression Collection",
-  "description": "Starter REST and MQ smoke tests for AS400 transaction automation.",
+  "name": "AS400 Demo Regression Pack",
+  "description": "Demo-ready REST, TCP/IP, MQ and DB mock tests for AS400 transaction automation.",
   "test_cases": [
     {
-      "name": "REST - Health Check",
+      "name": "REST - Platform Health Check",
       "tags": ["rest", "smoke"],
       "request": {
         "protocol": "REST",
@@ -23,8 +23,99 @@
       ]
     },
     {
-      "name": "MQ - Settlement Template",
-      "tags": ["mq", "settlement"],
+      "name": "REST - Authorization Inquiry Mock",
+      "tags": ["rest", "authorization", "mock"],
+      "request": {
+        "protocol": "REST",
+        "rest": {
+          "method": "GET",
+          "url": "{{platform_base_url}}/health",
+          "timeout_seconds": 10
+        }
+      },
+      "validations": [
+        {
+          "name": "Inquiry service responds",
+          "source": "json",
+          "path": "$.status",
+          "operator": "equals",
+          "expected": "OK"
+        }
+      ]
+    },
+    {
+      "name": "TCP/IP - Authorization Approved",
+      "tags": ["tcp", "authorization", "approval", "mock"],
+      "request": {
+        "protocol": "TCP",
+        "tcp": {
+          "host": "{{as400_host}}",
+          "port": 9001,
+          "encoding": "ebcdic",
+          "response_encoding": "ebcdic",
+          "payload": "AUTH|TXN10001|CARD411111******1111|100.00|USD",
+          "timeout_seconds": 30,
+          "read_bytes": 4096,
+          "mock_response": "AUTHRESP|TXN10001|APPROVED|00|APPR123456|BALANCE_OK",
+          "mock_response_time_ms": 21
+        }
+      },
+      "validations": [
+        {
+          "name": "Authorization approved",
+          "source": "text",
+          "operator": "contains",
+          "expected": "APPROVED"
+        },
+        {
+          "name": "Response code is 00",
+          "source": "text",
+          "operator": "contains",
+          "expected": "|00|"
+        },
+        {
+          "name": "TCP response under SLA",
+          "source": "response_time_ms",
+          "operator": "less_than",
+          "expected": 500
+        }
+      ]
+    },
+    {
+      "name": "TCP/IP - Authorization Declined",
+      "tags": ["tcp", "authorization", "negative", "mock"],
+      "request": {
+        "protocol": "TCP",
+        "tcp": {
+          "host": "{{as400_host}}",
+          "port": 9001,
+          "encoding": "ebcdic",
+          "response_encoding": "ebcdic",
+          "payload": "AUTH|TXN10002|CARD400000******0002|9000.00|USD",
+          "timeout_seconds": 30,
+          "read_bytes": 4096,
+          "mock_response": "AUTHRESP|TXN10002|DECLINED|51|NO_SUFFICIENT_FUNDS",
+          "mock_response_time_ms": 28
+        }
+      },
+      "validations": [
+        {
+          "name": "Authorization declined",
+          "source": "text",
+          "operator": "contains",
+          "expected": "DECLINED"
+        },
+        {
+          "name": "Decline reason is insufficient funds",
+          "source": "text",
+          "operator": "contains",
+          "expected": "NO_SUFFICIENT_FUNDS"
+        }
+      ]
+    },
+    {
+      "name": "MQ - Settlement Event Mock",
+      "tags": ["mq", "settlement", "mock"],
       "request": {
         "protocol": "MQ",
         "mq": {
@@ -34,8 +125,8 @@
           "port": 1414,
           "request_queue": "DEV.REQUEST",
           "response_queue": "DEV.RESPONSE",
-          "payload": "{\"transactionId\":\"T10001\",\"amount\":100}",
-          "correlation_id": "T10001",
+          "payload": "{\"transactionId\":\"TXN10001\",\"amount\":100,\"status\":\"READY_FOR_SETTLEMENT\"}",
+          "correlation_id": "TXN10001",
           "simulate": true
         }
       },
@@ -47,7 +138,185 @@
           "operator": "exists"
         }
       ]
+    },
+    {
+      "name": "MQ - Fraud Event Mock",
+      "tags": ["mq", "fraud", "event", "mock"],
+      "request": {
+        "protocol": "MQ",
+        "mq": {
+          "queue_manager": "QM1",
+          "channel": "DEV.APP.SVRCONN",
+          "host": "{{mq_host}}",
+          "port": 1414,
+          "request_queue": "FRAUD.EVENT.REQUEST",
+          "response_queue": "FRAUD.EVENT.RESPONSE",
+          "payload": "{\"transactionId\":\"TXN10002\",\"riskScore\":92,\"action\":\"REVIEW\"}",
+          "correlation_id": "TXN10002",
+          "simulate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "Fraud event correlation exists",
+          "source": "mqmd",
+          "path": "correlation_id",
+          "operator": "equals",
+          "expected": "TXN10002"
+        }
+      ]
+    },
+    {
+      "name": "DB - Authorization Posted",
+      "tags": ["db", "backend", "authorization", "mock"],
+      "request": {
+        "protocol": "DB",
+        "db": {
+          "driver": "sqlite",
+          "connection": "data/backend_validation.sqlite3",
+          "query": "select transaction_id, status, response_code, amount from authorization_result where transaction_id = ?",
+          "parameters": ["TXN10001"],
+          "mock_rows": [
+            {
+              "transaction_id": "TXN10001",
+              "status": "POSTED",
+              "response_code": "00",
+              "amount": 100
+            }
+          ]
+        }
+      },
+      "validations": [
+        {
+          "name": "Backend row exists",
+          "source": "db",
+          "path": "row_count",
+          "operator": "equals",
+          "expected": 1
+        },
+        {
+          "name": "Backend status is posted",
+          "source": "db",
+          "path": "rows.0.status",
+          "operator": "equals",
+          "expected": "POSTED"
+        }
+      ]
     }
   ],
-  "scenarios": []
+  "scenarios": [
+    {
+      "name": "Scenario - Full Approved Authorization Flow",
+      "description": "REST readiness, TCP/IP authorization, MQ settlement event and backend validation.",
+      "tags": ["scenario", "authorization", "happy-path"],
+      "steps": [
+        {
+          "name": "Check API gateway health",
+          "inline_case": {
+            "name": "REST Step - Gateway Health",
+            "request": {
+              "protocol": "REST",
+              "rest": {
+                "method": "GET",
+                "url": "{{platform_base_url}}/health",
+                "timeout_seconds": 10
+              }
+            },
+            "validations": [
+              {
+                "name": "Gateway is online",
+                "source": "json",
+                "path": "$.status",
+                "operator": "equals",
+                "expected": "OK"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Submit TCP/IP authorization",
+          "inline_case": {
+            "name": "TCP Step - Authorization Approved",
+            "request": {
+              "protocol": "TCP",
+              "tcp": {
+                "host": "{{as400_host}}",
+                "port": 9001,
+                "payload": "AUTH|TXN10001|CARD411111******1111|100.00|USD",
+                "encoding": "ebcdic",
+                "response_encoding": "ebcdic",
+                "mock_response": "AUTHRESP|TXN10001|APPROVED|00|APPR123456",
+                "mock_response_time_ms": 21
+              }
+            },
+            "validations": [
+              {
+                "name": "TCP approval returned",
+                "source": "text",
+                "operator": "contains",
+                "expected": "APPROVED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Publish settlement MQ event",
+          "inline_case": {
+            "name": "MQ Step - Settlement Event",
+            "request": {
+              "protocol": "MQ",
+              "mq": {
+                "queue_manager": "QM1",
+                "request_queue": "SETTLEMENT.REQUEST",
+                "response_queue": "SETTLEMENT.RESPONSE",
+                "payload": "{\"transactionId\":\"TXN10001\",\"status\":\"READY_FOR_SETTLEMENT\"}",
+                "correlation_id": "TXN10001",
+                "simulate": true
+              }
+            },
+            "validations": [
+              {
+                "name": "Settlement correlation matches",
+                "source": "mqmd",
+                "path": "correlation_id",
+                "operator": "equals",
+                "expected": "TXN10001"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Validate backend posting",
+          "inline_case": {
+            "name": "DB Step - Backend Posted",
+            "request": {
+              "protocol": "DB",
+              "db": {
+                "driver": "sqlite",
+                "connection": "data/backend_validation.sqlite3",
+                "query": "select status from authorization_result where transaction_id = ?",
+                "parameters": ["TXN10001"],
+                "mock_rows": [
+                  {
+                    "transaction_id": "TXN10001",
+                    "status": "POSTED",
+                    "response_code": "00"
+                  }
+                ]
+              }
+            },
+            "validations": [
+              {
+                "name": "Backend status posted",
+                "source": "db",
+                "path": "rows.0.status",
+                "operator": "equals",
+                "expected": "POSTED"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }

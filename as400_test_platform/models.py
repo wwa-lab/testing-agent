@@ -61,6 +61,8 @@ class TcpRequest(BaseModel):
     timeout_seconds: float = 30
     read_bytes: int = 8192
     append_newline: bool = False
+    mock_response: str | None = None
+    mock_response_time_ms: float = 24
 
 
 class MqRequest(BaseModel):
@@ -82,6 +84,7 @@ class DbRequest(BaseModel):
     connection: str
     query: str
     parameters: list[Any] = Field(default_factory=list)
+    mock_rows: list[dict[str, Any]] | None = None
 
 
 class TransactionRequest(BaseModel):
@@ -188,4 +191,3 @@ class RunReport(BaseModel):
     scenario_results: list[ScenarioResult] = Field(default_factory=list)
     started_at: str
     finished_at: str
-

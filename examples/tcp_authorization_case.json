@@ -10,7 +10,9 @@
       "response_encoding": "ebcdic",
       "payload": "AUTH000000010000000100",
       "timeout_seconds": 30,
-      "read_bytes": 4096
+      "read_bytes": 4096,
+      "mock_response": "AUTHRESP|TXN10001|APPROVED|00|APPR123456|BALANCE_OK",
+      "mock_response_time_ms": 21
     }
   },
   "validations": [

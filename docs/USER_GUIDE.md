@@ -45,6 +45,16 @@ Protocol details such as host, port, encoding, MQ queue names, DB validation que
 
 For the first local trial, open `Admin` and click `Create Starter Setup`. It creates a local smoke environment and a starter collection.
 
+The starter collection includes demo-ready mock data for REST, TCP/IP authorization, IBM MQ events, backend DB validation, and a full approved authorization scenario. This lets customers understand the system before a real AS400 host, MQ queue manager, or backend database is connected.
+
+The UI follows common professional testing-console patterns:
+
+- Dashboard tiles for collection count, case count, latest status, and pass rate.
+- A suite runner with explicit execution mode and run profile.
+- Protocol coverage across REST, TCP, MQ, and DB.
+- Searchable API library grouped by protocol.
+- Report history with status, total cases, pass/fail count, and pass rate.
+
 ## 3. Core Concepts
 
 ### Environment
@@ -170,9 +180,11 @@ Example:
       "port": 9001,
       "encoding": "ebcdic",
       "response_encoding": "ebcdic",
-      "payload": "AUTH000000010000000100",
+      "payload": "AUTH|TXN10001|CARD411111******1111|100.00|USD",
       "timeout_seconds": 30,
-      "read_bytes": 4096
+      "read_bytes": 4096,
+      "mock_response": "AUTHRESP|TXN10001|APPROVED|00|APPR123456|BALANCE_OK",
+      "mock_response_time_ms": 21
     }
   },
   "validations": [
@@ -185,6 +197,8 @@ Example:
   ]
 }
 ```
+
+For a real AS400 socket test, remove `mock_response` and keep the real `host`, `port`, `encoding`, and `payload`.
 
 ## 7. Create an MQ Test Case
 
@@ -221,7 +235,7 @@ The MVP supports MQ simulation by default. For real IBM MQ execution, install th
 
 ## 8. Backend DB Validation
 
-The MVP includes SQLite DB validation. Enterprise DB2/AS400 database drivers can be added behind the same `DB` request shape.
+The MVP includes SQLite DB validation and mock rows for demos. Enterprise DB2/AS400 database drivers can be added behind the same `DB` request shape.
 
 ```json
 {
@@ -232,7 +246,14 @@ The MVP includes SQLite DB validation. Enterprise DB2/AS400 database drivers can
       "driver": "sqlite",
       "connection": "data/backend_validation.sqlite3",
       "query": "select status from authorization_result where transaction_id = ?",
-      "parameters": ["T10001"]
+      "parameters": ["TXN10001"],
+      "mock_rows": [
+        {
+          "transaction_id": "TXN10001",
+          "status": "POSTED",
+          "response_code": "00"
+        }
+      ]
     }
   },
   "validations": [

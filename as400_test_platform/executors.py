@@ -206,6 +206,21 @@ def execute_rest(request: RestRequest) -> TransactionResponse:
 
 def execute_tcp(request: TcpRequest) -> TransactionResponse:
     started = time.perf_counter()
+    if request.mock_response is not None:
+        return TransactionResponse(
+            protocol=Protocol.TCP,
+            status="OK",
+            body={"message": request.mock_response, "mocked": True},
+            raw_body=request.mock_response,
+            response_time_ms=request.mock_response_time_ms,
+            metadata={
+                "host": request.host,
+                "port": request.port,
+                "encoding": request.encoding,
+                "bytes_received": len(request.mock_response.encode("utf-8")),
+                "mocked": True,
+            },
+        )
     payload = request.payload + ("\n" if request.append_newline else "")
     outbound = encode_payload(payload, request.encoding)
     with socket.create_connection((request.host, request.port), timeout=request.timeout_seconds) as sock:
@@ -270,6 +285,16 @@ def execute_mq(request: MqRequest) -> TransactionResponse:
 
 def execute_db(request: DbRequest) -> TransactionResponse:
     started = time.perf_counter()
+    if request.mock_rows is not None:
+        elapsed = (time.perf_counter() - started) * 1000
+        return TransactionResponse(
+            protocol=Protocol.DB,
+            status="OK",
+            body={"rows": request.mock_rows, "row_count": len(request.mock_rows), "mocked": True},
+            raw_body=json.dumps(request.mock_rows),
+            response_time_ms=round(elapsed, 2),
+            metadata={"driver": request.driver, "mocked": True},
+        )
     with sqlite3.connect(request.connection) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(request.query, request.parameters).fetchall()
@@ -403,4 +428,3 @@ def _protocol_summary(results: list[CaseResult]) -> dict[str, int]:
     for result in results:
         summary[result.protocol.value] = summary.get(result.protocol.value, 0) + 1
     return summary
-

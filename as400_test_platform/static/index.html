@@ -42,16 +42,38 @@
           </div>
         </header>
 
+        <section class="status-board" aria-label="Workspace status">
+          <div class="status-card">
+            <span>Collections</span>
+            <strong id="metricCollections">0</strong>
+          </div>
+          <div class="status-card">
+            <span>Test Cases</span>
+            <strong id="metricCases">0</strong>
+          </div>
+          <div class="status-card">
+            <span>Latest Status</span>
+            <strong id="metricLatest">No run</strong>
+          </div>
+          <div class="status-card">
+            <span>Pass Rate</span>
+            <strong id="metricPassRate">0%</strong>
+          </div>
+        </section>
+
         <section class="view active" id="view-run">
           <div class="hero-panel">
             <div>
               <p class="eyebrow">Execution</p>
-              <h2>Run approved transaction tests without touching protocol setup.</h2>
+              <h2>Run AS400 transaction suites with environment-safe controls.</h2>
             </div>
-            <button class="primary-button" id="runCollectionButton" type="button">Run Selected Suite</button>
+            <div class="hero-actions">
+              <span id="runReadiness" class="readiness">Waiting for scripts</span>
+              <button class="primary-button" id="runCollectionButton" type="button">Run Selected Suite</button>
+            </div>
           </div>
 
-          <div class="content-grid two">
+          <div class="content-grid run-grid">
             <section class="panel">
               <div class="panel-header">
                 <div>
@@ -76,6 +98,38 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
+                  <p class="eyebrow">Run Profile</p>
+                  <h3>Execution Guardrails</h3>
+                </div>
+              </div>
+              <div class="profile-list">
+                <label class="profile-option">
+                  <input name="runProfile" type="radio" checked />
+                  <span>
+                    <strong>Functional Regression</strong>
+                    <small>Sequential run with validation and report capture.</small>
+                  </span>
+                </label>
+                <label class="profile-option">
+                  <input name="runProfile" type="radio" />
+                  <span>
+                    <strong>Smoke Verification</strong>
+                    <small>Fast suite for environment readiness checks.</small>
+                  </span>
+                </label>
+                <label class="profile-option muted">
+                  <input name="runProfile" type="radio" disabled />
+                  <span>
+                    <strong>Rollback Batch</strong>
+                    <small>Reserved for admin-enabled rollback jobs.</small>
+                  </span>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
                   <p class="eyebrow">Single Case</p>
                   <h3>Quick Run</h3>
                 </div>
@@ -88,6 +142,16 @@
               <div class="summary-strip" id="caseSummary"></div>
             </section>
           </div>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Coverage</p>
+                <h3>Protocol Coverage</h3>
+              </div>
+            </div>
+            <div class="protocol-grid" id="protocolCoverage"></div>
+          </section>
 
           <section class="panel result-panel">
             <div class="panel-header">
@@ -110,6 +174,16 @@
                   <h3>API Library</h3>
                 </div>
               </div>
+              <div class="toolbar">
+                <input id="librarySearch" placeholder="Search cases" />
+                <select id="libraryProtocol">
+                  <option value="">All protocols</option>
+                  <option value="REST">REST</option>
+                  <option value="TCP">TCP</option>
+                  <option value="MQ">MQ</option>
+                  <option value="DB">DB</option>
+                </select>
+              </div>
               <div id="libraryTree" class="tree"></div>
             </section>
             <section class="panel">
@@ -131,6 +205,7 @@
                 <p class="eyebrow">History</p>
                 <h3>Reports</h3>
               </div>
+              <button class="ghost-button" id="refreshReportsButton" type="button">Refresh Reports</button>
             </div>
             <div id="reportList" class="report-list"></div>
           </section>

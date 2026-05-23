@@ -127,7 +127,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 h1,
@@ -164,11 +164,42 @@ h3 {
 .topbar-actions,
 .panel-header,
 .summary-strip,
-.report-meta {
+.report-meta,
+.hero-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.status-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.status-card {
+  min-height: 86px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(23, 32, 28, 0.05);
+}
+
+.status-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 24px;
 }
 
 select,
@@ -262,6 +293,33 @@ input:focus {
   background: linear-gradient(115deg, #ffffff 0%, #edf7f1 62%, #eaf0ff 100%);
 }
 
+.hero-actions {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.readiness {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.readiness.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.readiness.caution {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .panel {
   padding: 20px;
 }
@@ -274,6 +332,14 @@ input:focus {
 
 .content-grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.content-grid.run-grid {
+  grid-template-columns: minmax(420px, 1.15fr) minmax(300px, 0.85fr);
+}
+
+.content-grid.run-grid > .panel:nth-child(3) {
+  grid-column: 1 / -1;
 }
 
 .content-grid.split {
@@ -300,6 +366,77 @@ input:focus {
   background: var(--soft);
   color: var(--muted);
   font-size: 14px;
+}
+
+.profile-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.profile-option {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.profile-option input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+}
+
+.profile-option strong,
+.profile-option small {
+  display: block;
+}
+
+.profile-option small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.profile-option.muted {
+  background: #f8faf9;
+  color: #7a857f;
+}
+
+.protocol-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.protocol-card {
+  min-height: 96px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+}
+
+.protocol-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.protocol-card strong {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 28px;
+}
+
+.protocol-card small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .result-panel {
@@ -378,6 +515,13 @@ input:focus {
   margin-top: 16px;
 }
 
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 .tree-group {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -436,6 +580,31 @@ input:focus {
   gap: 18px;
 }
 
+.report-table {
+  display: grid;
+  gap: 8px;
+}
+
+.report-row {
+  display: grid;
+  grid-template-columns: 120px minmax(180px, 1.2fr) repeat(4, minmax(70px, 0.5fr));
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.report-head {
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .admin-tabs {
   display: grid;
   align-content: start;
@@ -486,9 +655,12 @@ input:focus {
 @media (max-width: 920px) {
   .app-shell,
   .content-grid.two,
+  .content-grid.run-grid,
   .content-grid.split,
   .admin-layout,
-  .form-grid {
+  .form-grid,
+  .status-board,
+  .protocol-grid {
     grid-template-columns: 1fr;
   }
 
@@ -515,7 +687,15 @@ input:focus {
     align-items: stretch;
   }
 
+  .hero-actions {
+    align-items: stretch;
+  }
+
   .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -530,6 +710,10 @@ input:focus {
   }
 
   .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
     grid-template-columns: 1fr;
   }
 }
