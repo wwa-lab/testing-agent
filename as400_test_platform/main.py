@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .executors import ExecutionEngine
 from .models import (
@@ -26,6 +30,13 @@ app = FastAPI(
 )
 store = Store()
 engine = ExecutionEngine(store)
+static_dir = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    return FileResponse(static_dir / "index.html")
 
 
 @app.get("/health")
@@ -210,4 +221,3 @@ def _load_environment(environment_id: str | None) -> Environment | None:
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
-

@@ -21,6 +21,7 @@ uvicorn as400_test_platform.main:app --reload --port 8000
 
 Open API documentation:
 
+- Web UI: http://127.0.0.1:8000
 - Swagger UI: http://127.0.0.1:8000/docs
 - OpenAPI JSON: http://127.0.0.1:8000/openapi.json
 
@@ -30,6 +31,6 @@ Open API documentation:
 - `as400_test_platform/models.py` - API schemas
 - `as400_test_platform/store.py` - SQLite persistence
 - `as400_test_platform/executors.py` - REST, TCP, MQ, DB, and scenario execution
+- `as400_test_platform/static/` - Friendly web interface for testers and admins
 - `docs/USER_GUIDE.md` - English user guide
 - `examples/sample_collection.json` - Example collection with REST, TCP, MQ, and DB steps
-

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AS400 Test Studio</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <strong>AS400 Test Studio</strong>
+            <span>Transaction QA</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <button class="nav-item active" data-view="run">Run Center</button>
+          <button class="nav-item" data-view="library">API Library</button>
+          <button class="nav-item" data-view="reports">Reports</button>
+          <button class="nav-item" data-view="admin">Admin</button>
+        </nav>
+
+        <div class="sidebar-status">
+          <span class="status-dot" id="healthDot"></span>
+          <span id="healthText">Checking API</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h1 id="pageTitle">Run Center</h1>
+          </div>
+          <div class="topbar-actions">
+            <select id="globalEnvironment"></select>
+            <button class="ghost-button" id="refreshButton" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="view active" id="view-run">
+          <div class="hero-panel">
+            <div>
+              <p class="eyebrow">Execution</p>
+              <h2>Run approved transaction tests without touching protocol setup.</h2>
+            </div>
+            <button class="primary-button" id="runCollectionButton" type="button">Run Selected Suite</button>
+          </div>
+
+          <div class="content-grid two">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Suite</p>
+                  <h3>Batch Run</h3>
+                </div>
+              </div>
+              <label class="field">
+                <span>Collection</span>
+                <select id="collectionSelect"></select>
+              </label>
+              <label class="field">
+                <span>Execution Mode</span>
+                <select id="stopOnFailure">
+                  <option value="false">Continue on failure</option>
+                  <option value="true">Stop on first failure</option>
+                </select>
+              </label>
+              <div class="summary-strip" id="collectionSummary"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Single Case</p>
+                  <h3>Quick Run</h3>
+                </div>
+              </div>
+              <label class="field">
+                <span>Test Case</span>
+                <select id="caseSelect"></select>
+              </label>
+              <button class="secondary-button" id="runCaseButton" type="button">Run Case</button>
+              <div class="summary-strip" id="caseSummary"></div>
+            </section>
+          </div>
+
+          <section class="panel result-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Latest Result</p>
+                <h3>Execution Report</h3>
+              </div>
+              <span class="pill neutral" id="latestStatus">No run</span>
+            </div>
+            <div id="latestReport" class="empty-state">No execution report yet.</div>
+          </section>
+        </section>
+
+        <section class="view" id="view-library">
+          <div class="content-grid split">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Hierarchy</p>
+                  <h3>API Library</h3>
+                </div>
+              </div>
+              <div id="libraryTree" class="tree"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Selection</p>
+                  <h3>Case Details</h3>
+                </div>
+              </div>
+              <pre id="caseDetails" class="code-view">Select a case from the library.</pre>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-reports">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">History</p>
+                <h3>Reports</h3>
+              </div>
+            </div>
+            <div id="reportList" class="report-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-admin">
+          <div class="admin-layout">
+            <nav class="admin-tabs" aria-label="Admin sections">
+              <button class="admin-tab active" data-admin="env">Environments</button>
+              <button class="admin-tab" data-admin="load">Script Loading</button>
+              <button class="admin-tab" data-admin="case">Test Case JSON</button>
+              <button class="admin-tab" data-admin="backend">Backend Config</button>
+            </nav>
+
+            <section class="admin-section active" id="admin-env">
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Admin</p>
+                    <h3>Environment</h3>
+                  </div>
+                  <button class="ghost-button" id="createStarterButton" type="button">Create Starter Setup</button>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Name</span>
+                    <input id="envName" placeholder="AS400 Static SIT" />
+                  </label>
+                  <label class="field">
+                    <span>Description</span>
+                    <input id="envDescription" placeholder="Rollback-ready testing environment" />
+                  </label>
+                </div>
+                <label class="field">
+                  <span>Variables JSON</span>
+                  <textarea id="envVariables" rows="8">{
+                  "rest_base_url": "https://sit-api.company.com",
+  "platform_base_url": "http://127.0.0.1:8000",
+  "as400_host": "10.10.20.30",
+  "as400_auth_port": "9001",
+  "mq_host": "10.10.20.40"
+}</textarea>
+                </label>
+                <button class="primary-button" id="saveEnvironmentButton" type="button">Save Environment</button>
+              </div>
+            </section>
+
+            <section class="admin-section" id="admin-load">
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Admin</p>
+                    <h3>Collection Loader</h3>
+                  </div>
+                  <button class="ghost-button" id="loadSampleButton" type="button">Use Sample</button>
+                </div>
+                <label class="field">
+                  <span>Collection JSON</span>
+                  <textarea id="collectionJson" rows="18"></textarea>
+                </label>
+                <button class="primary-button" id="saveCollectionButton" type="button">Load Collection</button>
+              </div>
+            </section>
+
+            <section class="admin-section" id="admin-case">
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Admin</p>
+                    <h3>Test Case Editor</h3>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Test Case JSON</span>
+                  <textarea id="testCaseJson" rows="18"></textarea>
+                </label>
+                <button class="primary-button" id="saveCaseButton" type="button">Save Test Case</button>
+              </div>
+            </section>
+
+            <section class="admin-section" id="admin-backend">
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Admin</p>
+                    <h3>Backend Configuration</h3>
+                  </div>
+                </div>
+                <div class="config-list">
+                  <div class="config-row">
+                    <strong>TCP/IP Authorization</strong>
+                    <span>Host, port, encoding, parser, timeout and rollback variables are stored in Environment.</span>
+                  </div>
+                  <div class="config-row">
+                    <strong>RESTful API</strong>
+                    <span>Base URL, auth token and common headers are stored in Environment variables.</span>
+                  </div>
+                  <div class="config-row">
+                    <strong>IBM MQ</strong>
+                    <span>Queue manager, channel, queue names and correlation policy are loaded through admin scripts.</span>
+                  </div>
+                  <div class="config-row">
+                    <strong>DB Validation</strong>
+                    <span>Backend queries are owned by admin scripts and exposed to testers as named validation steps.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

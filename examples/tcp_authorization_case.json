@@ -1,0 +1,23 @@
+{
+  "name": "TCP - Authorization Template",
+  "tags": ["tcp", "authorization"],
+  "request": {
+    "protocol": "TCP",
+    "tcp": {
+      "host": "{{as400_host}}",
+      "port": 9001,
+      "encoding": "ebcdic",
+      "response_encoding": "ebcdic",
+      "payload": "AUTH000000010000000100",
+      "timeout_seconds": 30,
+      "read_bytes": 4096
+    }
+  },
+  "validations": [
+    {
+      "name": "Authorization response exists",
+      "source": "text",
+      "operator": "exists"
+    }
+  ]
+}

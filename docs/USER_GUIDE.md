@@ -28,8 +28,22 @@ uvicorn as400_test_platform.main:app --reload --port 8000
 
 Then open:
 
+- Web UI: `http://127.0.0.1:8000`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
+
+## 2.1 Web UI Structure
+
+The web UI is split into four areas:
+
+- `Run Center` for testers to select an environment, run a collection, run a single case, and read the latest result.
+- `API Library` for Postman-like protocol grouping and test case review.
+- `Reports` for execution history.
+- `Admin` for environments, script loading, raw test case JSON, and backend configuration notes.
+
+Protocol details such as host, port, encoding, MQ queue names, DB validation queries, and rollback variables should be maintained in `Admin`, not by daily test users.
+
+For the first local trial, open `Admin` and click `Create Starter Setup`. It creates a local smoke environment and a starter collection.
 
 ## 3. Core Concepts
 
@@ -324,4 +338,3 @@ Recommended next steps before enterprise deployment:
 - Add rollback trigger integration for the static AS400 test environment.
 - Add a web UI using the same API, with Postman-like hierarchy display.
 - Add Git-backed version control for scripts.
-
