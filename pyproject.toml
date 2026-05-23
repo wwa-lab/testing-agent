@@ -1,0 +1,20 @@
+[project]
+name = "as400-transaction-test-platform"
+version = "0.1.0"
+description = "Automation test platform API for AS400/IBM i TCP, REST, MQ and scenario validation."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.7.0",
+]
+
+[project.optional-dependencies]
+mq = [
+  "pymqi>=1.12.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
