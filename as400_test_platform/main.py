@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Body, FastAPI, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .executors import ExecutionEngine
@@ -21,6 +21,7 @@ from .models import (
     TestCase,
     TestCaseCreate,
 )
+from .postman import from_postman_collection, is_postman_collection, to_postman_collection
 from .store import Store
 
 app = FastAPI(
@@ -84,6 +85,16 @@ def get_test_case(case_id: str) -> TestCase:
     return test_case
 
 
+@app.put("/test-cases/{case_id}", response_model=TestCase)
+def update_test_case(case_id: str, payload: TestCaseCreate) -> TestCase:
+    if not store.get_case(case_id):
+        raise HTTPException(status_code=404, detail="Test case not found")
+    test_case = TestCase(id=case_id, **payload.model_dump())
+    store.save("case", test_case)
+    _replace_case_in_collections(test_case)
+    return test_case
+
+
 @app.post("/scenarios", response_model=Scenario)
 def create_scenario(payload: ScenarioCreate) -> Scenario:
     scenario = Scenario(**payload.model_dump())
@@ -106,6 +117,17 @@ def get_scenario(scenario_id: str) -> Scenario:
 
 @app.post("/collections", response_model=Collection)
 def create_collection(payload: CollectionCreate) -> Collection:
+    return _create_collection(payload)
+
+
+@app.post("/collections/import", response_model=Collection)
+def import_collection(payload: dict = Body(...)) -> Collection:
+    if is_postman_collection(payload):
+        return _create_collection(from_postman_collection(payload))
+    return _create_collection(CollectionCreate.model_validate(payload))
+
+
+def _create_collection(payload: CollectionCreate) -> Collection:
     collection = Collection(
         name=payload.name,
         description=payload.description,
@@ -134,6 +156,38 @@ def get_collection(collection_id: str) -> Collection:
     collection = store.get_collection(collection_id)
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
+    return collection
+
+
+@app.get("/collections/{collection_id}/postman")
+def export_collection_postman(collection_id: str) -> JSONResponse:
+    collection = store.get_collection(collection_id)
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    return JSONResponse(to_postman_collection(collection))
+
+
+@app.put("/collections/{collection_id}", response_model=Collection)
+def update_collection(collection_id: str, payload: Collection) -> Collection:
+    existing = store.get_collection(collection_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    collection = Collection(
+        id=collection_id,
+        name=payload.name,
+        description=payload.description,
+        test_cases=[],
+        scenarios=[],
+    )
+    for item in payload.test_cases:
+        test_case = TestCase.model_validate(item.model_dump())
+        store.save("case", test_case)
+        collection.test_cases.append(test_case)
+    for item in payload.scenarios:
+        scenario = Scenario.model_validate(item.model_dump())
+        store.save("scenario", scenario)
+        collection.scenarios.append(scenario)
+    store.save("collection", collection)
     return collection
 
 
@@ -221,3 +275,18 @@ def _load_environment(environment_id: str | None) -> Environment | None:
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _replace_case_in_collections(test_case: TestCase) -> None:
+    for collection in store.list_collections():
+        changed = False
+        updated_cases = []
+        for item in collection.test_cases:
+            if item.id == test_case.id:
+                updated_cases.append(test_case)
+                changed = True
+            else:
+                updated_cases.append(item)
+        if changed:
+            collection.test_cases = updated_cases
+            store.save("collection", collection)

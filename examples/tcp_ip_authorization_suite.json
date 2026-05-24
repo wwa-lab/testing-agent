@@ -1,0 +1,65 @@
+{
+  "name": "TCP/IP Authorization Testing Suite",
+  "description": "API-level TCP/IP authorization tests for AS400 approval, decline and SLA validation.",
+  "test_cases": [
+    {
+      "name": "TCP/IP - Authorization Approved",
+      "tags": ["tcp", "authorization", "approval", "mock"],
+      "request": {
+        "protocol": "TCP",
+        "tcp": {
+          "host": "{{as400_host}}",
+          "port": 9001,
+          "encoding": "ebcdic",
+          "response_encoding": "ebcdic",
+          "payload": "AUTH|TXN10001|CARD411111******1111|100.00|USD",
+          "timeout_seconds": 30,
+          "read_bytes": 4096,
+          "mock_response": "AUTHRESP|TXN10001|APPROVED|00|APPR123456|BALANCE_OK",
+          "mock_response_time_ms": 21
+        }
+      },
+      "validations": [
+        {
+          "name": "Authorization approved",
+          "source": "text",
+          "operator": "contains",
+          "expected": "APPROVED"
+        },
+        {
+          "name": "Response code is 00",
+          "source": "text",
+          "operator": "contains",
+          "expected": "|00|"
+        }
+      ]
+    },
+    {
+      "name": "TCP/IP - Authorization Declined",
+      "tags": ["tcp", "authorization", "negative", "mock"],
+      "request": {
+        "protocol": "TCP",
+        "tcp": {
+          "host": "{{as400_host}}",
+          "port": 9001,
+          "encoding": "ebcdic",
+          "response_encoding": "ebcdic",
+          "payload": "AUTH|TXN10002|CARD400000******0002|9000.00|USD",
+          "timeout_seconds": 30,
+          "read_bytes": 4096,
+          "mock_response": "AUTHRESP|TXN10002|DECLINED|51|NO_SUFFICIENT_FUNDS",
+          "mock_response_time_ms": 28
+        }
+      },
+      "validations": [
+        {
+          "name": "Authorization declined",
+          "source": "text",
+          "operator": "contains",
+          "expected": "DECLINED"
+        }
+      ]
+    }
+  ],
+  "scenarios": []
+}

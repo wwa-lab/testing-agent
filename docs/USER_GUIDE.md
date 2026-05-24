@@ -47,6 +47,45 @@ For the first local trial, open `Admin` and click `Create Starter Setup`. It cre
 
 The starter collection includes demo-ready mock data for REST, TCP/IP authorization, IBM MQ events, backend DB validation, and a full approved authorization scenario. This lets customers understand the system before a real AS400 host, MQ queue manager, or backend database is connected.
 
+Protocol suites are separated in the Run Center:
+
+- `REST` shows REST API-level testing suites.
+- `TCP/IP` shows AS400 authorization socket testing suites.
+- `MQ` shows IBM MQ event/message testing suites.
+- `E2E` shows cross-protocol business-flow suites.
+- `All` shows every loaded suite.
+
+The recommended customer-facing setup is to keep protocol-level suites separate, then create E2E suites only for complete business flows.
+
+## 2.2 Postman-like Suite Builder
+
+`Suite Builder` uses a Postman-like structure:
+
+- Left side: testing suite collection tree.
+- A suite can contain one API or multiple APIs.
+- Each API can use `REST`, `TCP`, `MQ`, or `DB` protocol.
+- Right side: selected API workspace with `Request`, `Validation`, and `Response` tabs.
+- `Run API` executes the selected API and displays the response plus validation results.
+- `Import` loads a suite JSON file, similar to importing a Postman collection.
+- Imported files can be native platform suite JSON or Postman Collection v2.1 JSON.
+- `Export` downloads the selected suite as a Postman Collection JSON file.
+- `Save Suite` updates the selected suite name and description.
+- `Save API` updates the selected API case request, validations, tags, and protocol settings from the editable JSON workspace.
+
+This means the same platform can support:
+
+- One suite with one TCP/IP authorization API.
+- One suite with multiple REST APIs.
+- One suite with multiple MQ message transactions.
+- One E2E suite that chains REST, TCP/IP, MQ, and DB validation.
+
+Postman compatibility notes:
+
+- REST APIs are exported as normal Postman requests.
+- Simple status-code and text-contains validations are exported as Postman test scripts.
+- TCP/IP, MQ, and DB items are exported as valid Postman collection items with platform metadata in the item description.
+- When the exported file is imported back into AS400 Test Studio, the platform restores the original protocol settings and validations from that metadata.
+
 The UI follows common professional testing-console patterns:
 
 - Dashboard tiles for collection count, case count, latest status, and pass rate.

@@ -1,0 +1,48 @@
+{
+  "name": "REST API Testing Suite",
+  "description": "API-level REST tests for gateway readiness and authorization inquiry.",
+  "test_cases": [
+    {
+      "name": "REST - Platform Health Check",
+      "tags": ["rest", "smoke"],
+      "request": {
+        "protocol": "REST",
+        "rest": {
+          "method": "GET",
+          "url": "{{platform_base_url}}/health",
+          "timeout_seconds": 10
+        }
+      },
+      "validations": [
+        {
+          "name": "HTTP status is 200",
+          "source": "status_code",
+          "operator": "equals",
+          "expected": 200
+        }
+      ]
+    },
+    {
+      "name": "REST - Authorization Inquiry Mock",
+      "tags": ["rest", "authorization", "mock"],
+      "request": {
+        "protocol": "REST",
+        "rest": {
+          "method": "GET",
+          "url": "{{platform_base_url}}/health",
+          "timeout_seconds": 10
+        }
+      },
+      "validations": [
+        {
+          "name": "Inquiry service responds",
+          "source": "json",
+          "path": "$.status",
+          "operator": "equals",
+          "expected": "OK"
+        }
+      ]
+    }
+  ],
+  "scenarios": []
+}

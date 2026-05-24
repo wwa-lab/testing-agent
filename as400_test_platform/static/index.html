@@ -19,7 +19,7 @@
 
         <nav class="nav" aria-label="Primary">
           <button class="nav-item active" data-view="run">Run Center</button>
-          <button class="nav-item" data-view="library">API Library</button>
+          <button class="nav-item" data-view="library">Suite Builder</button>
           <button class="nav-item" data-view="reports">Reports</button>
           <button class="nav-item" data-view="admin">Admin</button>
         </nav>
@@ -77,12 +77,19 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <p class="eyebrow">Suite</p>
+                  <p class="eyebrow">Protocol Lane</p>
                   <h3>Batch Run</h3>
                 </div>
               </div>
+              <div class="protocol-tabs" aria-label="Protocol suites">
+                <button class="protocol-tab active" data-protocol="TCP" type="button">TCP/IP</button>
+                <button class="protocol-tab" data-protocol="REST" type="button">REST</button>
+                <button class="protocol-tab" data-protocol="MQ" type="button">MQ</button>
+                <button class="protocol-tab" data-protocol="E2E" type="button">E2E</button>
+                <button class="protocol-tab" data-protocol="" type="button">All</button>
+              </div>
               <label class="field">
-                <span>Collection</span>
+                <span>API-level Testing Suite</span>
                 <select id="collectionSelect"></select>
               </label>
               <label class="field">
@@ -166,13 +173,29 @@
         </section>
 
         <section class="view" id="view-library">
-          <div class="content-grid split">
-            <section class="panel">
+          <div class="postman-layout">
+            <section class="panel collection-browser">
               <div class="panel-header">
                 <div>
-                  <p class="eyebrow">Hierarchy</p>
-                  <h3>API Library</h3>
+                  <p class="eyebrow">Collections</p>
+                  <h3>Testing Suites</h3>
                 </div>
+                <div class="compact-actions">
+                  <button class="ghost-button" id="importSuiteButton" type="button">Import</button>
+                  <button class="ghost-button" id="exportSuiteButton" type="button">Export</button>
+                  <button class="ghost-button" id="saveSuiteButton" type="button">Save Suite</button>
+                </div>
+              </div>
+              <input id="suiteFileInput" type="file" accept="application/json,.json" hidden />
+              <div class="suite-editor">
+                <label class="field">
+                  <span>Suite Name</span>
+                  <input id="suiteNameInput" placeholder="Select or import a suite" />
+                </label>
+                <label class="field">
+                  <span>Description</span>
+                  <textarea id="suiteDescriptionInput" rows="3"></textarea>
+                </label>
               </div>
               <div class="toolbar">
                 <input id="librarySearch" placeholder="Search cases" />
@@ -186,14 +209,36 @@
               </div>
               <div id="libraryTree" class="tree"></div>
             </section>
-            <section class="panel">
+
+            <section class="panel api-workbench">
               <div class="panel-header">
                 <div>
-                  <p class="eyebrow">Selection</p>
-                  <h3>Case Details</h3>
+                  <p class="eyebrow">API Workspace</p>
+                  <h3 id="workbenchTitle">Select an API</h3>
+                </div>
+                <div class="compact-actions">
+                  <button class="ghost-button" id="saveWorkbenchCaseButton" type="button">Save API</button>
+                  <button class="primary-button" id="runWorkbenchCaseButton" type="button">Run API</button>
                 </div>
               </div>
-              <pre id="caseDetails" class="code-view">Select a case from the library.</pre>
+              <div class="request-line" id="requestLine">
+                <span class="method-badge neutral">API</span>
+                <strong>No API selected</strong>
+              </div>
+              <div class="workbench-tabs">
+                <button class="workbench-tab active" data-workbench="request" type="button">Request</button>
+                <button class="workbench-tab" data-workbench="validation" type="button">Validation</button>
+                <button class="workbench-tab" data-workbench="response" type="button">Response</button>
+              </div>
+              <div class="workbench-panel active" id="workbench-request">
+                <textarea id="caseDetails" class="code-view editor-view" spellcheck="false">Select an API from the suite tree.</textarea>
+              </div>
+              <div class="workbench-panel" id="workbench-validation">
+                <div id="validationList" class="validation-list"></div>
+              </div>
+              <div class="workbench-panel" id="workbench-response">
+                <div id="workbenchResult" class="empty-state">Run the selected API to see response and validation results.</div>
+              </div>
             </section>
           </div>
         </section>
@@ -262,6 +307,10 @@
                   </div>
                   <button class="ghost-button" id="loadSampleButton" type="button">Use Sample</button>
                 </div>
+                <label class="field">
+                  <span>Demo Suite Template</span>
+                  <select id="sampleSuiteSelect"></select>
+                </label>
                 <label class="field">
                   <span>Collection JSON</span>
                   <textarea id="collectionJson" rows="18"></textarea>

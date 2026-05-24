@@ -1,0 +1,60 @@
+{
+  "name": "MQ Event Testing Suite",
+  "description": "API-level IBM MQ transaction tests for settlement and fraud event messages.",
+  "test_cases": [
+    {
+      "name": "MQ - Settlement Event Mock",
+      "tags": ["mq", "settlement", "mock"],
+      "request": {
+        "protocol": "MQ",
+        "mq": {
+          "queue_manager": "QM1",
+          "channel": "DEV.APP.SVRCONN",
+          "host": "{{mq_host}}",
+          "port": 1414,
+          "request_queue": "DEV.REQUEST",
+          "response_queue": "DEV.RESPONSE",
+          "payload": "{\"transactionId\":\"TXN10001\",\"amount\":100,\"status\":\"READY_FOR_SETTLEMENT\"}",
+          "correlation_id": "TXN10001",
+          "simulate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "Correlation ID exists",
+          "source": "mqmd",
+          "path": "correlation_id",
+          "operator": "exists"
+        }
+      ]
+    },
+    {
+      "name": "MQ - Fraud Event Mock",
+      "tags": ["mq", "fraud", "event", "mock"],
+      "request": {
+        "protocol": "MQ",
+        "mq": {
+          "queue_manager": "QM1",
+          "channel": "DEV.APP.SVRCONN",
+          "host": "{{mq_host}}",
+          "port": 1414,
+          "request_queue": "FRAUD.EVENT.REQUEST",
+          "response_queue": "FRAUD.EVENT.RESPONSE",
+          "payload": "{\"transactionId\":\"TXN10002\",\"riskScore\":92,\"action\":\"REVIEW\"}",
+          "correlation_id": "TXN10002",
+          "simulate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "Fraud event correlation exists",
+          "source": "mqmd",
+          "path": "correlation_id",
+          "operator": "equals",
+          "expected": "TXN10002"
+        }
+      ]
+    }
+  ],
+  "scenarios": []
+}

@@ -4,6 +4,10 @@ const state = {
   collections: [],
   reports: [],
   latestReport: null,
+  selectedProtocol: "TCP",
+  selectedCaseId: null,
+  selectedCollectionId: null,
+  workbenchResult: null,
 };
 
 const sampleCollection = {
@@ -337,7 +341,8 @@ document.addEventListener("DOMContentLoaded", () => {
   bindAdminTabs();
   bindActions();
   $("#envVariables").value = JSON.stringify(defaultEnvironmentVariables(), null, 2);
-  $("#collectionJson").value = JSON.stringify(sampleCollection, null, 2);
+  renderSampleSuiteSelect();
+  $("#collectionJson").value = JSON.stringify(buildStarterCollections()[1], null, 2);
   $("#testCaseJson").value = JSON.stringify(sampleCollection.test_cases[0], null, 2);
   refreshAll();
 });
@@ -370,19 +375,45 @@ function bindActions() {
   $("#refreshReportsButton").addEventListener("click", refreshAll);
   $("#runCollectionButton").addEventListener("click", runSelectedCollection);
   $("#runCaseButton").addEventListener("click", runSelectedCase);
+  $("#runWorkbenchCaseButton").addEventListener("click", runWorkbenchCase);
+  $("#saveWorkbenchCaseButton").addEventListener("click", saveWorkbenchCase);
+  $("#importSuiteButton").addEventListener("click", () => $("#suiteFileInput").click());
+  $("#exportSuiteButton").addEventListener("click", exportSelectedSuite);
+  $("#suiteFileInput").addEventListener("change", importSuiteFromFile);
+  $("#saveSuiteButton").addEventListener("click", saveSelectedSuite);
   $("#saveEnvironmentButton").addEventListener("click", saveEnvironment);
   $("#createStarterButton").addEventListener("click", createStarterSetup);
   $("#saveCollectionButton").addEventListener("click", saveCollection);
   $("#saveCaseButton").addEventListener("click", saveCase);
   $("#loadSampleButton").addEventListener("click", () => {
-    $("#collectionJson").value = JSON.stringify(sampleCollection, null, 2);
-    toast("Sample collection loaded into editor.");
+    const collection = selectedSampleSuite();
+    $("#collectionJson").value = JSON.stringify(collection, null, 2);
+    toast(`${collection.name} loaded into editor.`);
+  });
+  $("#sampleSuiteSelect").addEventListener("change", () => {
+    $("#collectionJson").value = JSON.stringify(selectedSampleSuite(), null, 2);
+  });
+  $$(".protocol-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$(".protocol-tab").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      state.selectedProtocol = button.dataset.protocol;
+      renderRunSelectors();
+    });
   });
   $("#collectionSelect").addEventListener("change", renderCollectionSummary);
   $("#caseSelect").addEventListener("change", renderCaseSummary);
   $("#globalEnvironment").addEventListener("change", renderRunReadiness);
   $("#librarySearch").addEventListener("input", renderLibrary);
   $("#libraryProtocol").addEventListener("change", renderLibrary);
+  $$(".workbench-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$(".workbench-tab").forEach((item) => item.classList.remove("active"));
+      $$(".workbench-panel").forEach((panel) => panel.classList.remove("active"));
+      button.classList.add("active");
+      $(`#workbench-${button.dataset.workbench}`).classList.add("active");
+    });
+  });
 }
 
 async function refreshAll() {
@@ -402,6 +433,8 @@ async function refreshAll() {
   renderWorkspaceMetrics();
   renderProtocolCoverage();
   renderLibrary();
+  renderSuiteEditor();
+  renderWorkbench();
   renderReports();
 }
 
@@ -443,17 +476,21 @@ function renderRunSelectors() {
   const caseSelect = $("#caseSelect");
   collectionSelect.innerHTML = "";
   caseSelect.innerHTML = "";
+  const filteredCollections = state.collections.filter((collection) =>
+    collectionMatchesProtocol(collection, state.selectedProtocol),
+  );
+  const filteredCases = state.cases.filter((testCase) => caseMatchesProtocol(testCase, state.selectedProtocol));
 
-  if (!state.collections.length) {
+  if (!filteredCollections.length) {
     collectionSelect.append(new Option("No collection loaded", ""));
   } else {
-    state.collections.forEach((collection) => collectionSelect.append(new Option(collection.name, collection.id)));
+    filteredCollections.forEach((collection) => collectionSelect.append(new Option(collection.name, collection.id)));
   }
 
-  if (!state.cases.length) {
+  if (!filteredCases.length) {
     caseSelect.append(new Option("No test case loaded", ""));
   } else {
-    state.cases.forEach((testCase) => caseSelect.append(new Option(testCase.name, testCase.id)));
+    filteredCases.forEach((testCase) => caseSelect.append(new Option(testCase.name, testCase.id)));
   }
 
   renderCollectionSummary();
@@ -489,8 +526,8 @@ function renderCollectionSummary() {
   const id = $("#collectionSelect").value;
   const collection = state.collections.find((item) => item.id === id);
   $("#collectionSummary").innerHTML = collection
-    ? `<span>${collection.test_cases.length} cases</span><span>${collection.scenarios.length} scenarios</span>`
-    : "<span>Load a collection in Admin.</span>";
+    ? `<span>${collectionProtocolLabel(collection)}</span><span>${collection.test_cases.length} cases</span><span>${collection.scenarios.length} scenarios</span>`
+    : `<span>Load a ${state.selectedProtocol || "protocol"} suite in Admin.</span>`;
   renderRunReadiness();
 }
 
@@ -531,37 +568,58 @@ function coverageLabel(protocol, count) {
 function renderLibrary() {
   const search = $("#librarySearch")?.value.trim().toLowerCase() || "";
   const protocolFilter = $("#libraryProtocol")?.value || "";
-  const visibleCases = state.cases.filter((testCase) => {
-    const matchesProtocol = !protocolFilter || testCase.request.protocol === protocolFilter;
-    const haystack = `${testCase.name} ${(testCase.tags || []).join(" ")}`.toLowerCase();
-    return matchesProtocol && (!search || haystack.includes(search));
-  });
-
-  const groups = visibleCases.reduce((acc, testCase) => {
-    const protocol = testCase.request.protocol || "OTHER";
-    acc[protocol] = acc[protocol] || [];
-    acc[protocol].push(testCase);
-    return acc;
-  }, {});
-
   const tree = $("#libraryTree");
-  if (!Object.keys(groups).length) {
+  const visibleCollections = state.collections
+    .map((collection) => {
+      const cases = collection.test_cases.filter((testCase) => {
+        const matchesProtocol = !protocolFilter || testCase.request.protocol === protocolFilter;
+        const haystack = `${collection.name} ${testCase.name} ${(testCase.tags || []).join(" ")}`.toLowerCase();
+        return matchesProtocol && (!search || haystack.includes(search));
+      });
+      const scenarios = collection.scenarios.filter((scenario) => {
+        const haystack = `${collection.name} ${scenario.name} ${(scenario.tags || []).join(" ")}`.toLowerCase();
+        return !protocolFilter && (!search || haystack.includes(search));
+      });
+      return { ...collection, test_cases: cases, scenarios };
+    })
+    .filter((collection) => collection.test_cases.length || collection.scenarios.length);
+
+  if (!visibleCollections.length) {
     tree.innerHTML = '<div class="empty-state">No matching API scripts.</div>';
-    $("#caseDetails").textContent = "Adjust the filter or load scripts from Admin.";
+    $("#caseDetails").value = "Adjust the filter or import a suite.";
     return;
   }
 
-  tree.innerHTML = Object.entries(groups)
+  tree.innerHTML = visibleCollections
     .map(
-      ([protocol, cases]) => `
+      (collection) => `
         <div class="tree-group">
-          <div class="tree-title">${protocol}</div>
-          ${cases
+          <button class="tree-title ${state.selectedCollectionId === collection.id ? "selected" : ""}" type="button" data-collection-id="${collection.id}">
+            <span>${escapeHtml(collection.name)}</span>
+            <small>${collectionProtocolLabel(collection)}</small>
+          </button>
+          ${collection.test_cases
             .map(
               (item) => `
-                <div class="tree-item">
-                  <button type="button" data-case-id="${item.id}">${escapeHtml(item.name)}</button>
-                  <span>${item.tags.join(", ") || "No tags"}</span>
+                <div class="tree-item ${state.selectedCaseId === item.id ? "selected" : ""}">
+                  <button type="button" data-case-id="${item.id}">
+                    <span class="method-badge ${methodClass(item.request.protocol)}">${protocolDisplay(item.request.protocol)}</span>
+                    ${escapeHtml(item.name)}
+                  </button>
+                  <span>${item.validations.length} validations · ${item.tags.join(", ") || "No tags"}</span>
+                </div>
+              `,
+            )
+            .join("")}
+          ${collection.scenarios
+            .map(
+              (item) => `
+                <div class="tree-item scenario">
+                  <button type="button" disabled>
+                    <span class="method-badge e2e">E2E</span>
+                    ${escapeHtml(item.name)}
+                  </button>
+                  <span>${item.steps.length} steps · ${item.tags.join(", ") || "No tags"}</span>
                 </div>
               `,
             )
@@ -573,10 +631,72 @@ function renderLibrary() {
 
   tree.querySelectorAll("[data-case-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      const item = state.cases.find((testCase) => testCase.id === button.dataset.caseId);
-      $("#caseDetails").textContent = JSON.stringify(item, null, 2);
+      state.selectedCaseId = button.dataset.caseId;
+      state.selectedCollectionId = findCollectionForCase(state.selectedCaseId)?.id || state.selectedCollectionId;
+      state.workbenchResult = null;
+      renderLibrary();
+      renderSuiteEditor();
+      renderWorkbench();
     });
   });
+  tree.querySelectorAll("[data-collection-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedCollectionId = button.dataset.collectionId;
+      renderLibrary();
+      renderSuiteEditor();
+    });
+  });
+}
+
+function renderWorkbench() {
+  const testCase = selectedWorkbenchCase();
+  if (!testCase) {
+    $("#workbenchTitle").textContent = "Select an API";
+    $("#requestLine").innerHTML = '<span class="method-badge neutral">API</span><strong>No API selected</strong>';
+    $("#caseDetails").value = "Select an API from the suite tree.";
+    $("#validationList").innerHTML = '<div class="empty-state">No API selected.</div>';
+    $("#workbenchResult").innerHTML = "Run the selected API to see response and validation results.";
+    $("#runWorkbenchCaseButton").disabled = true;
+    $("#saveWorkbenchCaseButton").disabled = true;
+    return;
+  }
+
+  $("#runWorkbenchCaseButton").disabled = false;
+  $("#saveWorkbenchCaseButton").disabled = false;
+  $("#workbenchTitle").textContent = testCase.name;
+  $("#requestLine").innerHTML = `
+    <span class="method-badge ${methodClass(testCase.request.protocol)}">${protocolDisplay(testCase.request.protocol)}</span>
+    <strong>${escapeHtml(requestHeadline(testCase))}</strong>
+  `;
+  $("#caseDetails").value = JSON.stringify(testCase, null, 2);
+  $("#validationList").innerHTML = testCase.validations.length
+    ? testCase.validations
+        .map(
+          (rule) => `
+            <div class="validation-row">
+              <strong>${escapeHtml(rule.name)}</strong>
+              <span>${rule.source}${rule.path ? ` ${rule.path}` : ""} ${rule.operator} ${formatExpected(rule.expected)}</span>
+            </div>
+          `,
+        )
+        .join("")
+    : '<div class="empty-state">No validation rules configured.</div>';
+
+  $("#workbenchResult").innerHTML = state.workbenchResult
+    ? workbenchResultMarkup(state.workbenchResult)
+    : "Run the selected API to see response and validation results.";
+}
+
+function renderSuiteEditor() {
+  const collection = selectedCollection();
+  $("#saveSuiteButton").disabled = !collection;
+  if (!collection) {
+    $("#suiteNameInput").value = "";
+    $("#suiteDescriptionInput").value = "";
+    return;
+  }
+  $("#suiteNameInput").value = collection.name;
+  $("#suiteDescriptionInput").value = collection.description || "";
 }
 
 function renderReports() {
@@ -620,6 +740,112 @@ async function runSelectedCase() {
   await runAndRender(`/runs/test-cases/${caseId}`, {
     environment_id: selectedEnvironmentId(),
   });
+}
+
+async function runWorkbenchCase() {
+  const testCase = selectedWorkbenchCase();
+  if (!testCase) return toast("Select an API before running.");
+  try {
+    setBusy(true);
+    const report = await api(`/runs/test-cases/${testCase.id}`, {
+      method: "POST",
+      body: JSON.stringify({ environment_id: selectedEnvironmentId() }),
+    });
+    state.workbenchResult = report.case_results[0] || null;
+    state.latestReport = report;
+    await refreshAll();
+    state.workbenchResult = report.case_results[0] || null;
+    renderWorkbench();
+    $$(".workbench-tab").forEach((item) => item.classList.remove("active"));
+    $$(".workbench-panel").forEach((panel) => panel.classList.remove("active"));
+    $('[data-workbench="response"]').classList.add("active");
+    $("#workbench-response").classList.add("active");
+    toast("API run completed.");
+  } catch (error) {
+    toast(`API run failed: ${error.message}`);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function saveWorkbenchCase() {
+  const testCase = selectedWorkbenchCase();
+  if (!testCase) return toast("Select an API before saving.");
+  try {
+    const payload = JSON.parse($("#caseDetails").value);
+    const caseId = payload.id || testCase.id;
+    delete payload.id;
+    const updated = await api(`/test-cases/${caseId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    state.selectedCaseId = updated.id;
+    state.workbenchResult = null;
+    await refreshAll();
+    toast("API case saved.");
+  } catch (error) {
+    toast(`Save API failed: ${error.message}`);
+  }
+}
+
+async function importSuiteFromFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    const collection = await api("/collections/import", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    state.selectedCollectionId = collection.id;
+    state.selectedCaseId = collection.test_cases[0]?.id || null;
+    await refreshAll();
+    toast(`${collection.name} imported.`);
+  } catch (error) {
+    toast(`Import failed: ${error.message}`);
+  } finally {
+    event.target.value = "";
+  }
+}
+
+async function exportSelectedSuite() {
+  const collection = selectedCollection();
+  if (!collection) return toast("Select a suite before exporting.");
+  try {
+    const postman = await api(`/collections/${collection.id}/postman`);
+    const blob = new Blob([JSON.stringify(postman, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    const safeName = collection.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "collection";
+    link.href = URL.createObjectURL(blob);
+    link.download = `${safeName}.postman_collection.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast("Postman collection exported.");
+  } catch (error) {
+    toast(`Export failed: ${error.message}`);
+  }
+}
+
+async function saveSelectedSuite() {
+  const collection = selectedCollection();
+  if (!collection) return toast("Select a suite before saving.");
+  try {
+    const updated = {
+      ...collection,
+      name: $("#suiteNameInput").value.trim(),
+      description: $("#suiteDescriptionInput").value.trim(),
+    };
+    if (!updated.name) throw new Error("Suite name is required.");
+    await api(`/collections/${collection.id}`, {
+      method: "PUT",
+      body: JSON.stringify(updated),
+    });
+    await refreshAll();
+    toast("Suite saved.");
+  } catch (error) {
+    toast(`Save suite failed: ${error.message}`);
+  }
 }
 
 async function runAndRender(path, body) {
@@ -674,13 +900,15 @@ async function createStarterSetup() {
         rollback: { mode: "manual", snapshot: "LOCAL_STARTER" },
       }),
     });
-    await api("/collections", {
-      method: "POST",
-      body: JSON.stringify(sampleCollection),
-    });
+    for (const collection of buildStarterCollections()) {
+      await api("/collections", {
+        method: "POST",
+        body: JSON.stringify(collection),
+      });
+    }
     await refreshAll();
     $("#globalEnvironment").value = environment.id;
-    toast("Starter setup created.");
+    toast("Protocol suites created.");
   } catch (error) {
     toast(`Starter setup failed: ${error.message}`);
   } finally {
@@ -722,6 +950,142 @@ function defaultEnvironmentVariables() {
     as400_auth_port: "9001",
     mq_host: "10.10.20.40",
   };
+}
+
+function buildStarterCollections() {
+  const cases = sampleCollection.test_cases;
+  const byProtocol = (protocol) => cases.filter((testCase) => testCase.request.protocol === protocol);
+  return [
+    {
+      name: "REST API Testing Suite",
+      description: "API-level REST tests for gateway readiness and authorization inquiry.",
+      test_cases: byProtocol("REST"),
+      scenarios: [],
+    },
+    {
+      name: "TCP/IP Authorization Testing Suite",
+      description: "API-level TCP/IP authorization tests for AS400 approval, decline and SLA validation.",
+      test_cases: byProtocol("TCP"),
+      scenarios: [],
+    },
+    {
+      name: "MQ Event Testing Suite",
+      description: "API-level IBM MQ transaction tests for settlement and fraud event messages.",
+      test_cases: byProtocol("MQ"),
+      scenarios: [],
+    },
+    {
+      name: "Backend DB Validation Suite",
+      description: "Backend validation checks used by end-to-end transaction testing.",
+      test_cases: byProtocol("DB"),
+      scenarios: [],
+    },
+    {
+      name: "End-to-End Authorization Flow Suite",
+      description: "Cross-protocol scenario chaining REST, TCP/IP, MQ and DB validation.",
+      test_cases: [],
+      scenarios: sampleCollection.scenarios,
+    },
+  ];
+}
+
+function renderSampleSuiteSelect() {
+  const select = $("#sampleSuiteSelect");
+  if (!select) return;
+  select.innerHTML = "";
+  buildStarterCollections().forEach((collection, index) => {
+    select.append(new Option(collection.name, String(index)));
+  });
+  select.value = "1";
+}
+
+function selectedSampleSuite() {
+  const suites = buildStarterCollections();
+  const index = Number($("#sampleSuiteSelect")?.value || 0);
+  return suites[index] || suites[0];
+}
+
+function collectionMatchesProtocol(collection, protocol) {
+  if (!protocol) return true;
+  if (protocol === "E2E") return collection.scenarios.length > 0 || collectionProtocolLabel(collection) === "E2E";
+  return collection.test_cases.some((testCase) => testCase.request.protocol === protocol);
+}
+
+function caseMatchesProtocol(testCase, protocol) {
+  if (!protocol || protocol === "E2E") return true;
+  return testCase.request.protocol === protocol;
+}
+
+function collectionProtocolLabel(collection) {
+  if (collection.scenarios.length && !collection.test_cases.length) return "E2E";
+  const protocols = new Set(collection.test_cases.map((testCase) => testCase.request.protocol));
+  return protocols.size === 1 ? Array.from(protocols)[0] : "Mixed";
+}
+
+function selectedWorkbenchCase() {
+  if (!state.selectedCaseId && state.cases.length) {
+    const preferred = state.cases.find((testCase) => testCase.request.protocol === "TCP") || state.cases[0];
+    state.selectedCaseId = preferred.id;
+    state.selectedCollectionId = findCollectionForCase(preferred.id)?.id || null;
+  }
+  return state.cases.find((testCase) => testCase.id === state.selectedCaseId) || null;
+}
+
+function selectedCollection() {
+  if (!state.selectedCollectionId) {
+    const testCase = selectedWorkbenchCase();
+    state.selectedCollectionId = findCollectionForCase(testCase?.id)?.id || state.collections[0]?.id || null;
+  }
+  return state.collections.find((collection) => collection.id === state.selectedCollectionId) || null;
+}
+
+function findCollectionForCase(caseId) {
+  if (!caseId) return null;
+  return state.collections.find((collection) => collection.test_cases.some((testCase) => testCase.id === caseId)) || null;
+}
+
+function protocolDisplay(protocol) {
+  return protocol === "TCP" ? "TCP/IP" : protocol;
+}
+
+function methodClass(protocol) {
+  return String(protocol || "neutral").toLowerCase();
+}
+
+function requestHeadline(testCase) {
+  if (testCase.request.rest) return `${testCase.request.rest.method} ${testCase.request.rest.url}`;
+  if (testCase.request.tcp) return `${testCase.request.tcp.host}:${testCase.request.tcp.port}`;
+  if (testCase.request.mq) return `${testCase.request.mq.queue_manager} / ${testCase.request.mq.request_queue}`;
+  if (testCase.request.db) return testCase.request.db.query;
+  return testCase.request.protocol;
+}
+
+function formatExpected(value) {
+  if (value === null || value === undefined) return "";
+  return JSON.stringify(value);
+}
+
+function workbenchResultMarkup(result) {
+  return `
+    <div class="response-summary">
+      <span class="pill ${result.passed ? "pass" : "fail"}">${result.passed ? "PASSED" : "FAILED"}</span>
+      <span>${result.protocol}</span>
+      <span>${result.response.response_time_ms} ms</span>
+    </div>
+    <div class="validation-list">
+      ${result.validations
+        .map(
+          (item) => `
+            <div class="validation-row ${item.passed ? "passed" : "failed"}">
+              <strong>${escapeHtml(item.name)}</strong>
+              <span>${item.passed ? "Passed" : item.message || "Failed"}</span>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+    <pre class="code-view">${escapeHtml(JSON.stringify(result.response, null, 2))}</pre>
+  `;
 }
 
 function reportMarkup(report, expanded) {
