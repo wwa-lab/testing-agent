@@ -1,0 +1,25 @@
+{
+  "generated": "2026-05-30T08:42:28Z",
+  "sections": [
+    {
+      "id": "mockups",
+      "label": "Mockups",
+      "groups": [
+        {
+          "slug": "credit-card-dashboard",
+          "files": [
+            {
+              "label": "dashboard.html",
+              "path": "mockups/credit-card-dashboard/dashboard.html"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-systems",
+      "label": "Design Systems",
+      "groups": []
+    }
+  ]
+}

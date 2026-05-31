@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Credit Card Operations Dashboard</title>
+    <style>
+      :root {
+        --page: #f4f1ea;
+        --panel: #fffdf8;
+        --panel-strong: #24251f;
+        --ink: #23251f;
+        --muted: #6e7166;
+        --line: #d8d2c4;
+        --line-strong: #b8b09f;
+        --green: #158463;
+        --teal: #007c89;
+        --amber: #bf7b13;
+        --red: #b9372c;
+        --blue: #286db5;
+        --shadow: 0 20px 45px rgba(35, 37, 31, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(90deg, rgba(36, 37, 31, 0.04) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(36, 37, 31, 0.035) 1px, transparent 1px),
+          var(--page);
+        background-size: 44px 44px;
+        color: var(--ink);
+        font-family: "Aptos", "Segoe UI", sans-serif;
+      }
+
+      button,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding: 22px 16px;
+        background: #25251f;
+        color: #fffaf0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 48px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid rgba(255, 250, 240, 0.35);
+        border-radius: 8px;
+        background: #dbf0df;
+        color: #174f3c;
+        font-family: Georgia, serif;
+        font-size: 23px;
+        font-weight: 800;
+      }
+
+      .brand strong,
+      .brand span {
+        display: block;
+      }
+
+      .brand span,
+      .nav-label,
+      .system-clock,
+      .microcopy {
+        color: rgba(255, 250, 240, 0.68);
+        font-size: 12px;
+      }
+
+      .nav {
+        display: grid;
+        gap: 6px;
+      }
+
+      .nav-label {
+        margin: 10px 10px 2px;
+        text-transform: uppercase;
+      }
+
+      .nav button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #fffaf0;
+        text-align: left;
+        padding: 0 12px;
+      }
+
+      .nav button.active,
+      .nav button:hover {
+        background: rgba(255, 250, 240, 0.12);
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 14px;
+        border: 1px solid rgba(255, 250, 240, 0.16);
+        border-radius: 8px;
+      }
+
+      .main {
+        min-width: 0;
+        padding: 24px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 780px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(30px, 4vw, 54px);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 18px;
+      }
+
+      h3 {
+        font-size: 15px;
+      }
+
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .control-strip,
+      .segmented,
+      .health-grid,
+      .kpi-grid,
+      .mini-metrics,
+      .panel-header,
+      .row,
+      .legend,
+      .status-line {
+        display: flex;
+        align-items: center;
+      }
+
+      .control-strip {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .segmented {
+        min-height: 44px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.78);
+      }
+
+      .segmented button {
+        min-width: 92px;
+        min-height: 34px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .segmented button.active {
+        background: var(--panel-strong);
+        color: #fffaf0;
+      }
+
+      .ghost-button {
+        min-height: 44px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        padding: 0 14px;
+        font-weight: 800;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.9fr);
+        gap: 16px;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .view.detail-stack.active {
+        display: grid;
+      }
+
+      .view:not(.active) {
+        display: none;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .detail-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .wide-panel {
+        grid-column: span 2;
+      }
+
+      .panel,
+      .metric-card,
+      .service-card,
+      .incident-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.94);
+        box-shadow: var(--shadow);
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .panel-header {
+        justify-content: space-between;
+        gap: 14px;
+        min-height: 42px;
+        margin-bottom: 14px;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+        border-radius: 8px;
+        padding: 0 10px;
+        background: rgba(21, 132, 99, 0.12);
+        color: var(--green);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .status-pill.warning {
+        background: rgba(191, 123, 19, 0.14);
+        color: var(--amber);
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .kpi-grid {
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .metric-card {
+        min-height: 128px;
+        padding: 14px;
+      }
+
+      .metric-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .metric-card strong {
+        display: block;
+        margin-top: 12px;
+        font-family: Georgia, serif;
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .metric-card small {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+      }
+
+      .metric-card.good strong {
+        color: var(--green);
+      }
+
+      .metric-card.warn strong {
+        color: var(--amber);
+      }
+
+      .main-stack,
+      .side-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .health-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(112px, 1fr));
+        gap: 10px;
+      }
+
+      .service-card {
+        min-height: 114px;
+        padding: 12px;
+        box-shadow: none;
+      }
+
+      .service-card strong {
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      .service-card .status-line {
+        justify-content: space-between;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .spark {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        align-items: end;
+        gap: 3px;
+        height: 36px;
+      }
+
+      .spark i {
+        display: block;
+        min-height: 8px;
+        border-radius: 3px 3px 0 0;
+        background: var(--teal);
+      }
+
+      .spark.warn i:nth-child(8),
+      .spark.warn i:nth-child(9) {
+        background: var(--amber);
+      }
+
+      .volume-chart {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        align-items: end;
+        gap: 8px;
+        height: 260px;
+        padding-top: 18px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .bar {
+        position: relative;
+        min-height: 20px;
+        border-radius: 6px 6px 0 0;
+        background: linear-gradient(180deg, var(--blue), #75a7d6);
+      }
+
+      .bar.fail {
+        background: linear-gradient(180deg, var(--amber), #e2bd74);
+      }
+
+      .bar::after {
+        position: absolute;
+        right: 0;
+        bottom: -24px;
+        left: 0;
+        color: var(--muted);
+        content: attr(data-label);
+        font-size: 11px;
+        text-align: center;
+      }
+
+      .mini-metrics {
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 34px;
+      }
+
+      .mini-metrics div {
+        min-width: 0;
+      }
+
+      .mini-metrics strong {
+        display: block;
+        font-size: 20px;
+      }
+
+      .mini-metrics span,
+      .legend {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .legend {
+        gap: 14px;
+        justify-content: flex-end;
+      }
+
+      .legend b {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        margin-right: 6px;
+        border-radius: 3px;
+        background: var(--blue);
+        vertical-align: -1px;
+      }
+
+      .legend .fail b {
+        background: var(--amber);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px 8px;
+        font-size: 13px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .tag {
+        display: inline-flex;
+        min-height: 26px;
+        align-items: center;
+        border-radius: 6px;
+        padding: 0 8px;
+        background: rgba(0, 124, 137, 0.12);
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .tag.red {
+        background: rgba(185, 55, 44, 0.12);
+        color: var(--red);
+      }
+
+      .tag.amber {
+        background: rgba(191, 123, 19, 0.14);
+        color: var(--amber);
+      }
+
+      .incident-card {
+        box-shadow: none;
+        padding: 12px;
+      }
+
+      .incident-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .row {
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .readiness {
+        display: grid;
+        gap: 10px;
+      }
+
+      .readiness-row {
+        display: grid;
+        grid-template-columns: 128px minmax(0, 1fr) 52px;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .rail {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e5dfd2;
+      }
+
+      .fill {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--green);
+      }
+
+      .fill.warn {
+        background: var(--amber);
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .mask-note {
+        border: 1px dashed var(--line-strong);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(36, 37, 31, 0.04);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 1180px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          flex-direction: row;
+          align-items: center;
+          overflow-x: auto;
+        }
+
+        .nav {
+          grid-auto-flow: column;
+          grid-auto-columns: max-content;
+        }
+
+        .nav-label,
+        .sidebar-footer {
+          display: none;
+        }
+
+        .board,
+        .two-col,
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .wide-panel {
+          grid-column: auto;
+        }
+
+        .kpi-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .main {
+          padding: 16px;
+        }
+
+        .topbar,
+        .control-strip {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .segmented {
+          width: 100%;
+        }
+
+        .segmented button {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .kpi-grid,
+        .health-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .volume-chart {
+          gap: 4px;
+          height: 210px;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">C</div>
+          <div>
+            <strong>CardOps Control</strong>
+            <span>Production + Testing</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <span class="nav-label">Monitor</span>
+          <button class="active" data-view-button="command" type="button">Command View</button>
+          <button data-view-button="transactions" type="button">Transactions</button>
+          <button data-view-button="health" type="button">Health Checks</button>
+          <button data-view-button="testing" type="button">Test Evidence</button>
+          <span class="nav-label">Govern</span>
+          <button data-view-button="incidents" type="button">Incidents</button>
+          <button data-view-button="audit" type="button">Audit Trail</button>
+          <button data-view-button="config" type="button">Configuration</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="system-clock">Last sync</div>
+          <strong id="lastSync">14:08:31</strong>
+          <p class="microcopy">PAN masked, CVV never stored, production access is read-only.</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Credit Card System Dashboard</p>
+            <h1>Health, transaction flow, and test readiness in one operational screen.</h1>
+          </div>
+          <div class="control-strip">
+            <div class="segmented" aria-label="Environment">
+              <button class="active" data-env="production" type="button">Production</button>
+              <button data-env="uat" type="button">UAT</button>
+              <button data-env="sit" type="button">SIT</button>
+            </div>
+            <button class="ghost-button" id="refresh" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="view active" data-view="command">
+          <section class="kpi-grid" aria-label="Key metrics">
+            <article class="metric-card good">
+              <span>Overall Health</span>
+              <strong id="overallHealth">96.8%</strong>
+              <small id="overallHealthNote">All payment-critical services available</small>
+            </article>
+            <article class="metric-card">
+              <span>Transactions Today</span>
+              <strong id="txnCount">1.28M</strong>
+              <small id="txnTrend">+4.2% vs same time yesterday</small>
+            </article>
+            <article class="metric-card good">
+              <span>Approval Rate</span>
+              <strong id="approvalRate">92.4%</strong>
+              <small id="approvalNote">Within normal production band</small>
+            </article>
+            <article class="metric-card warn">
+              <span>Open Alerts</span>
+              <strong id="alertCount">3</strong>
+              <small id="alertNote">1 warning needs owner review</small>
+            </article>
+          </section>
+
+          <div class="board">
+            <div class="main-stack">
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Live Service Health</p>
+                    <h2 id="healthTitle">Production payment lane</h2>
+                  </div>
+                  <span class="status-pill" id="serviceBadge"><span class="dot"></span>Stable</span>
+                </div>
+                <div class="health-grid" id="serviceGrid"></div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Production Data</p>
+                    <h2>Hourly transaction volume</h2>
+                  </div>
+                  <div class="legend">
+                    <span><b></b>Approved</span>
+                    <span class="fail"><b></b>Failed / timeout</span>
+                  </div>
+                </div>
+                <div class="volume-chart" id="volumeChart"></div>
+                <div class="mini-metrics">
+                  <div>
+                    <span>p95 response</span>
+                    <strong id="p95">412 ms</strong>
+                  </div>
+                  <div>
+                    <span>Technical failure</span>
+                    <strong id="failureRate">0.38%</strong>
+                  </div>
+                  <div>
+                    <span>MQ queue depth</span>
+                    <strong id="queueDepth">214</strong>
+                  </div>
+                  <div>
+                    <span>DB checks</span>
+                    <strong id="dbChecks">18/18</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Failed Transaction Watch</p>
+                    <h2>Latest exceptions</h2>
+                  </div>
+                  <span class="tag amber">masked data</span>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Flow</th>
+                      <th>Masked Card</th>
+                      <th>Reason</th>
+                      <th>Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody id="exceptionRows"></tbody>
+                </table>
+              </section>
+            </div>
+
+            <div class="side-stack">
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Testing Environment</p>
+                    <h2 id="readinessTitle">Release readiness</h2>
+                  </div>
+                  <span class="tag" id="releaseTag">UAT 2026.05.30</span>
+                </div>
+                <div class="readiness">
+                  <div class="readiness-row">
+                    <strong>Smoke</strong>
+                    <div class="rail"><div class="fill" id="smokeFill" style="width: 96%"></div></div>
+                    <span id="smokeScore">96%</span>
+                  </div>
+                  <div class="readiness-row">
+                    <strong>Regression</strong>
+                    <div class="rail"><div class="fill" id="regressionFill" style="width: 88%"></div></div>
+                    <span id="regressionScore">88%</span>
+                  </div>
+                  <div class="readiness-row">
+                    <strong>Data Setup</strong>
+                    <div class="rail"><div class="fill warn" id="dataFill" style="width: 74%"></div></div>
+                    <span id="dataScore">74%</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Incident Queue</p>
+                    <h2>Active attention</h2>
+                  </div>
+                  <span class="status-pill warning"><span class="dot"></span>Watch</span>
+                </div>
+                <div class="incident-list" id="incidentList"></div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Scenario Coverage</p>
+                    <h2>Card lifecycle tests</h2>
+                  </div>
+                </div>
+                <div class="two-col">
+                  <div class="mask-note">
+                    Authorization, reversal, settlement, refund, activation, block/unblock, limit change, payment posting, statement generation.
+                  </div>
+                  <div class="mask-note">
+                    Test evidence links production symptoms to matching QA scenarios so teams can reproduce defects faster.
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view detail-stack" data-view="transactions">
+          <div class="detail-grid">
+            <section class="panel wide-panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Transactions</p>
+                  <h2>Flow distribution and settlement position</h2>
+                </div>
+                <span class="tag">15 minute window</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Flow</th>
+                    <th>Volume</th>
+                    <th>Success</th>
+                    <th>p95</th>
+                    <th>Top Issue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>Authorization</td><td>684,210</td><td>92.8%</td><td>386 ms</td><td>Issuer timeout</td></tr>
+                  <tr><td>Settlement</td><td>214,908</td><td>99.2%</td><td>611 ms</td><td>MQ retry threshold</td></tr>
+                  <tr><td>Reversal</td><td>31,442</td><td>97.9%</td><td>455 ms</td><td>Duplicate reference</td></tr>
+                  <tr><td>Refund</td><td>18,304</td><td>98.6%</td><td>428 ms</td><td>Gateway retry</td></tr>
+                </tbody>
+              </table>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Risk Lens</p>
+                  <h2>Exception mix</h2>
+                </div>
+              </div>
+              <div class="readiness">
+                <div class="readiness-row"><strong>Timeout</strong><div class="rail"><div class="fill warn" style="width: 46%"></div></div><span>46%</span></div>
+                <div class="readiness-row"><strong>Decline</strong><div class="rail"><div class="fill" style="width: 31%"></div></div><span>31%</span></div>
+                <div class="readiness-row"><strong>Format</strong><div class="rail"><div class="fill" style="width: 14%"></div></div><span>14%</span></div>
+              </div>
+            </section>
+          </div>
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Masked Transaction Trail</p>
+                <h2>Recent payment events</h2>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr><th>Trace</th><th>Card</th><th>Merchant</th><th>Amount</th><th>Status</th><th>Latency</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>TXN-8F21</td><td>5424 **** **** 1809</td><td>MRC-2048</td><td>USD 128.40</td><td><span class="tag red">timeout</span></td><td>2,910 ms</td></tr>
+                <tr><td>TXN-8F22</td><td>4761 **** **** 8872</td><td>MRC-4421</td><td>USD 42.16</td><td><span class="tag">approved</span></td><td>334 ms</td></tr>
+                <tr><td>TXN-8F23</td><td>6011 **** **** 3340</td><td>MRC-9012</td><td>USD 89.00</td><td><span class="tag amber">reversed</span></td><td>512 ms</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section class="view detail-stack" data-view="health">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Health Checks</p>
+                <h2>Infrastructure and application probes</h2>
+              </div>
+              <span class="status-pill"><span class="dot"></span>22/24 passing</span>
+            </div>
+            <div class="health-grid">
+              <article class="service-card"><strong>Auth API</strong><div class="status-line"><span class="tag">OK</span><span>204 ms</span></div></article>
+              <article class="service-card"><strong>AS400 Sign-on</strong><div class="status-line"><span class="tag">OK</span><span>118 ms</span></div></article>
+              <article class="service-card"><strong>MQ Consumer</strong><div class="status-line"><span class="tag amber">Watch</span><span>lag 18m</span></div></article>
+              <article class="service-card"><strong>DB Posting</strong><div class="status-line"><span class="tag">OK</span><span>18 checks</span></div></article>
+              <article class="service-card"><strong>TCP Gateway</strong><div class="status-line"><span class="tag">OK</span><span>72 ms</span></div></article>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Probe Log</p>
+                <h2>Latest automated checks</h2>
+              </div>
+            </div>
+            <table>
+              <thead><tr><th>Check</th><th>Target</th><th>Status</th><th>Message</th><th>Next Run</th></tr></thead>
+              <tbody>
+                <tr><td>AS400 heartbeat</td><td>PROD-LPAR-01</td><td><span class="tag">pass</span></td><td>Interactive sign-on accepted</td><td>2 min</td></tr>
+                <tr><td>MQ depth</td><td>PAY.SETTLEMENT.IN</td><td><span class="tag amber">watch</span></td><td>Depth above baseline</td><td>1 min</td></tr>
+                <tr><td>DB reconciliation</td><td>CARD_POSTING</td><td><span class="tag">pass</span></td><td>No orphan postings</td><td>5 min</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section class="view detail-stack" data-view="testing">
+          <div class="detail-grid">
+            <section class="panel">
+              <div class="panel-header"><div><p class="eyebrow">Test Evidence</p><h2>Readiness score</h2></div><span class="tag">release gate</span></div>
+              <div class="readiness">
+                <div class="readiness-row"><strong>Smoke</strong><div class="rail"><div class="fill" style="width: 96%"></div></div><span>96%</span></div>
+                <div class="readiness-row"><strong>Regression</strong><div class="rail"><div class="fill" style="width: 88%"></div></div><span>88%</span></div>
+                <div class="readiness-row"><strong>Data</strong><div class="rail"><div class="fill warn" style="width: 74%"></div></div><span>74%</span></div>
+              </div>
+            </section>
+            <section class="panel wide-panel">
+              <div class="panel-header"><div><p class="eyebrow">Scenario Runs</p><h2>Latest lifecycle execution</h2></div></div>
+              <table>
+                <thead><tr><th>Scenario</th><th>Env</th><th>Result</th><th>Duration</th><th>Evidence</th></tr></thead>
+                <tbody>
+                  <tr><td>Authorization + reversal</td><td>UAT</td><td><span class="tag">pass</span></td><td>04:12</td><td>REQ/RES + DB snapshot</td></tr>
+                  <tr><td>Settlement MQ posting</td><td>UAT</td><td><span class="tag amber">blocked</span></td><td>01:48</td><td>Queue depth evidence</td></tr>
+                  <tr><td>Card block/unblock</td><td>SIT</td><td><span class="tag">pass</span></td><td>02:55</td><td>AS400 screen capture</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+        </section>
+
+        <section class="view detail-stack" data-view="incidents">
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">Incidents</p><h2>Operations queue</h2></div><span class="status-pill warning"><span class="dot"></span>3 active</span></div>
+            <div class="incident-list">
+              <article class="incident-card"><div class="row"><strong>INC-2401 MQ depth elevated</strong><span class="tag amber">P2</span></div><p class="microcopy" style="color: var(--muted); margin-top: 8px;">Settlement queue above baseline. Owner: Payments Ops. SLA: 31 minutes remaining.</p></article>
+              <article class="incident-card"><div class="row"><strong>INC-2402 Issuer timeout cluster</strong><span class="tag amber">P2</span></div><p class="microcopy" style="color: var(--muted); margin-top: 8px;">External issuer latency is affecting authorization success rate.</p></article>
+              <article class="incident-card"><div class="row"><strong>INC-2403 UAT data mismatch</strong><span class="tag red">P1 test</span></div><p class="microcopy" style="color: var(--muted); margin-top: 8px;">Payment posting validation mismatch after latest build.</p></article>
+            </div>
+          </section>
+        </section>
+
+        <section class="view detail-stack" data-view="audit">
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">Audit Trail</p><h2>Access and operational actions</h2></div><span class="tag amber">read-only production</span></div>
+            <table>
+              <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Scope</th><th>Result</th></tr></thead>
+              <tbody>
+                <tr><td>14:08</td><td>it.manager</td><td>Viewed production dashboard</td><td>Production</td><td><span class="tag">allowed</span></td></tr>
+                <tr><td>14:04</td><td>qa.lead</td><td>Opened test evidence</td><td>UAT</td><td><span class="tag">allowed</span></td></tr>
+                <tr><td>13:55</td><td>prod.support</td><td>Acknowledged alert</td><td>MQ</td><td><span class="tag">recorded</span></td></tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section class="view detail-stack" data-view="config">
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">Configuration</p><h2>Dashboard sources and guardrails</h2></div><span class="tag">prototype</span></div>
+            <div class="two-col">
+              <div class="mask-note">Data sources: AS400 heartbeat, REST gateway, IBM MQ depth, database reconciliation checks, synthetic transaction runs, and QA scenario results.</div>
+              <div class="mask-note">Security controls: PAN masking, no CVV storage, role-based production access, audit logging, and read-only production monitoring.</div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const data = {
+        production: {
+          health: "96.8%",
+          note: "All payment-critical services available",
+          txns: "1.28M",
+          trend: "+4.2% vs same time yesterday",
+          approval: "92.4%",
+          approvalNote: "Within normal production band",
+          alerts: "3",
+          alertNote: "1 warning needs owner review",
+          title: "Production payment lane",
+          badge: "Stable",
+          badgeClass: "",
+          p95: "412 ms",
+          failure: "0.38%",
+          queue: "214",
+          db: "18/18",
+          release: "UAT 2026.05.30",
+          readiness: [96, 88, 74],
+          bars: [62, 58, 64, 71, 78, 88, 92, 84, 76, 68, 72, 80],
+          services: [
+            ["AS400", "OK", "118 ms", [45, 55, 52, 60, 63, 58, 62, 68, 66, 70, 64, 72]],
+            ["REST API", "OK", "204 ms", [40, 44, 48, 54, 58, 62, 60, 65, 70, 72, 69, 74]],
+            ["IBM MQ", "Watch", "214 depth", [20, 28, 32, 34, 38, 44, 48, 69, 76, 61, 52, 49]],
+            ["Database", "OK", "18 checks", [55, 56, 54, 58, 60, 62, 61, 63, 60, 64, 65, 66]],
+            ["TCP/IP", "OK", "72 ms", [30, 34, 36, 38, 42, 39, 45, 48, 50, 46, 52, 54]]
+          ],
+          exceptions: [
+            ["14:06", "Authorization", "5424 **** **** 1809", "Issuer timeout", "Prod Support"],
+            ["13:58", "Settlement", "4761 **** **** 8872", "MQ retry threshold", "Payments"],
+            ["13:47", "Reversal", "6011 **** **** 3340", "Duplicate reference", "QA + Dev"]
+          ],
+          incidents: [
+            ["MQ depth elevated", "Payment settlement queue above baseline for 18 minutes.", "amber"],
+            ["Issuer timeout cluster", "One external issuer showing intermittent latency.", "amber"],
+            ["DB validation clean", "No failed posting integrity checks in current window.", ""]
+          ]
+        },
+        uat: {
+          health: "91.5%",
+          note: "One mock issuer endpoint unstable",
+          txns: "48.2K",
+          trend: "Regression load active",
+          approval: "89.1%",
+          approvalNote: "Lower due to negative test cases",
+          alerts: "5",
+          alertNote: "2 test blockers awaiting fix",
+          title: "UAT payment simulation lane",
+          badge: "Warning",
+          badgeClass: "warning",
+          p95: "538 ms",
+          failure: "2.14%",
+          queue: "42",
+          db: "16/18",
+          release: "UAT 2026.05.30",
+          readiness: [93, 81, 68],
+          bars: [36, 42, 44, 58, 66, 70, 63, 74, 52, 48, 56, 61],
+          services: [
+            ["AS400", "OK", "146 ms", [42, 46, 44, 50, 55, 52, 58, 54, 60, 62, 57, 59]],
+            ["REST API", "Watch", "312 ms", [35, 38, 44, 49, 56, 64, 70, 66, 60, 58, 54, 52]],
+            ["IBM MQ", "OK", "42 depth", [20, 24, 22, 28, 32, 30, 34, 33, 35, 38, 36, 34]],
+            ["Database", "Watch", "16 checks", [44, 48, 50, 53, 58, 61, 65, 70, 62, 55, 50, 48]],
+            ["TCP/IP", "OK", "94 ms", [28, 30, 34, 32, 36, 38, 40, 43, 42, 45, 44, 46]]
+          ],
+          exceptions: [
+            ["14:03", "Activation", "4000 **** **** 1010", "Mock issuer unavailable", "QA"],
+            ["13:49", "Limit Change", "4000 **** **** 2020", "DB expected value mismatch", "Dev"],
+            ["13:31", "Refund", "4000 **** **** 3030", "Scenario assertion failed", "QA"]
+          ],
+          incidents: [
+            ["Mock issuer unstable", "Negative-path tests blocked for issuer timeout cases.", "amber"],
+            ["Two DB checks failing", "Payment posting validation mismatch after latest build.", "red"],
+            ["Smoke suite passed", "Core authorization and reversal paths are available.", ""]
+          ]
+        },
+        sit: {
+          health: "98.2%",
+          note: "Integration services healthy",
+          txns: "12.7K",
+          trend: "Synthetic checks every 5 minutes",
+          approval: "94.8%",
+          approvalNote: "Expected simulation behavior",
+          alerts: "1",
+          alertNote: "Low priority certificate reminder",
+          title: "SIT integration lane",
+          badge: "Stable",
+          badgeClass: "",
+          p95: "289 ms",
+          failure: "0.72%",
+          queue: "7",
+          db: "18/18",
+          release: "SIT 2026.05.29",
+          readiness: [98, 91, 90],
+          bars: [22, 26, 24, 28, 34, 38, 42, 44, 40, 36, 35, 39],
+          services: [
+            ["AS400", "OK", "91 ms", [32, 34, 38, 40, 42, 44, 46, 48, 47, 49, 50, 52]],
+            ["REST API", "OK", "166 ms", [30, 35, 40, 45, 43, 48, 50, 52, 54, 56, 55, 58]],
+            ["IBM MQ", "OK", "7 depth", [14, 18, 16, 20, 22, 19, 21, 23, 22, 24, 20, 18]],
+            ["Database", "OK", "18 checks", [44, 46, 48, 50, 52, 54, 55, 56, 58, 57, 59, 60]],
+            ["TCP/IP", "OK", "60 ms", [26, 28, 30, 32, 34, 33, 36, 38, 37, 39, 41, 40]]
+          ],
+          exceptions: [
+            ["13:57", "Settlement", "4111 **** **** 1200", "Expected decline path", "QA"],
+            ["13:21", "Statement", "4111 **** **** 2200", "Batch not started", "Batch Ops"],
+            ["12:44", "Payment", "4111 **** **** 3200", "Synthetic retry", "Integration"]
+          ],
+          incidents: [
+            ["Certificate expires in 21 days", "Renewal reminder for SIT REST gateway.", "amber"],
+            ["Lifecycle suite clean", "Latest full card lifecycle suite passed.", ""],
+            ["No queue backlog", "MQ consumers are keeping pace with synthetic volume.", ""]
+          ]
+        }
+      };
+
+      const serviceGrid = document.querySelector("#serviceGrid");
+      const volumeChart = document.querySelector("#volumeChart");
+      const exceptionRows = document.querySelector("#exceptionRows");
+      const incidentList = document.querySelector("#incidentList");
+      const buttons = document.querySelectorAll("[data-env]");
+      const navButtons = document.querySelectorAll("[data-view-button]");
+      const views = document.querySelectorAll("[data-view]");
+
+      function renderSpark(values, warn) {
+        return `<div class="spark ${warn ? "warn" : ""}">${values
+          .map((value) => `<i style="height:${value}%"></i>`)
+          .join("")}</div>`;
+      }
+
+      function render(env) {
+        const selected = data[env];
+        document.querySelector("#overallHealth").textContent = selected.health;
+        document.querySelector("#overallHealthNote").textContent = selected.note;
+        document.querySelector("#txnCount").textContent = selected.txns;
+        document.querySelector("#txnTrend").textContent = selected.trend;
+        document.querySelector("#approvalRate").textContent = selected.approval;
+        document.querySelector("#approvalNote").textContent = selected.approvalNote;
+        document.querySelector("#alertCount").textContent = selected.alerts;
+        document.querySelector("#alertNote").textContent = selected.alertNote;
+        document.querySelector("#healthTitle").textContent = selected.title;
+        document.querySelector("#serviceBadge").className = `status-pill ${selected.badgeClass}`;
+        document.querySelector("#serviceBadge").innerHTML = `<span class="dot"></span>${selected.badge}`;
+        document.querySelector("#p95").textContent = selected.p95;
+        document.querySelector("#failureRate").textContent = selected.failure;
+        document.querySelector("#queueDepth").textContent = selected.queue;
+        document.querySelector("#dbChecks").textContent = selected.db;
+        document.querySelector("#releaseTag").textContent = selected.release;
+        document.querySelector("#smokeScore").textContent = `${selected.readiness[0]}%`;
+        document.querySelector("#regressionScore").textContent = `${selected.readiness[1]}%`;
+        document.querySelector("#dataScore").textContent = `${selected.readiness[2]}%`;
+        document.querySelector("#smokeFill").style.width = `${selected.readiness[0]}%`;
+        document.querySelector("#regressionFill").style.width = `${selected.readiness[1]}%`;
+        document.querySelector("#dataFill").style.width = `${selected.readiness[2]}%`;
+
+        serviceGrid.innerHTML = selected.services
+          .map(([name, status, latency, spark]) => {
+            const warn = status !== "OK";
+            return `<article class="service-card">
+              <strong>${name}</strong>
+              ${renderSpark(spark, warn)}
+              <div class="status-line">
+                <span class="tag ${warn ? "amber" : ""}">${status}</span>
+                <span>${latency}</span>
+              </div>
+            </article>`;
+          })
+          .join("");
+
+        volumeChart.innerHTML = selected.bars
+          .map((value, index) => {
+            const fail = index === 7 || index === 8;
+            return `<div class="bar ${fail ? "fail" : ""}" data-label="${String(index + 1).padStart(2, "0")}:00" style="height:${value}%"></div>`;
+          })
+          .join("");
+
+        exceptionRows.innerHTML = selected.exceptions
+          .map(([time, flow, card, reason, owner], index) => `<tr>
+            <td>${time}</td>
+            <td><span class="tag ${index === 0 ? "red" : "amber"}">${flow}</span></td>
+            <td>${card}</td>
+            <td>${reason}</td>
+            <td>${owner}</td>
+          </tr>`)
+          .join("");
+
+        incidentList.innerHTML = selected.incidents
+          .map(([title, body, color]) => `<article class="incident-card">
+            <div class="row">
+              <strong>${title}</strong>
+              <span class="tag ${color}">${color === "red" ? "critical" : color === "amber" ? "watch" : "ok"}</span>
+            </div>
+            <p class="microcopy" style="color: var(--muted); margin-top: 8px;">${body}</p>
+          </article>`)
+          .join("");
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          buttons.forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          render(button.dataset.env);
+        });
+      });
+
+      navButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          navButtons.forEach((item) => item.classList.remove("active"));
+          views.forEach((view) => view.classList.remove("active"));
+          button.classList.add("active");
+          document.querySelector(`[data-view="${button.dataset.viewButton}"]`).classList.add("active");
+        });
+      });
+
+      document.querySelector("#refresh").addEventListener("click", () => {
+        const now = new Date();
+        document.querySelector("#lastSync").textContent = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      });
+
+      render("production");
+    </script>
+  </body>
+</html>
